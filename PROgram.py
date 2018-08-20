@@ -1,7 +1,7 @@
 #===============================================================================================================
 #
 # -- PROgram - A ZenGM Football Draft Class Creator by immatx --
-# -- Last Updated: 2018.07.28 --
+# -- Last Updated: 2018.08.19 --
 # -- Initial Release -- 2018.07.26 --
 #
 #===============================================================================================================
@@ -13,6 +13,7 @@
 # 2018.07.26 - New Feature: Added option to import custom college list.
 # 2018.07.28 - Bug Fixed: Players will no longer not show up on the roster screen after being drafted. Also
 #              added a catch for potential negative ratings.
+# 2018.08.19 - Code Update: Improved potential and ratings realism for some positions.
 #
 #===============================================================================================================
 #
@@ -40,15 +41,15 @@
 # 2) Navigate to the program location in command prompt / terminal
 #
 # 3) Run the program
-# 
+#
 # 		ex) python program.py (this runs the script)
-# 
+#
 # 4) (Optional) Enter a custom colleges file.
 #
 # 	a) You can find the list of your colleges by searching 'teamregionscache' in the export
 #
 # 	b) Simply copy and paste the entire list into a text file and run it
-# 
+#
 # 5) Enter the file with the list of players
 #
 # 		ex) Enter the file name for the draft class => 2024 draft class
@@ -76,9 +77,9 @@
 #
 # 		ERROR MESSAGE: None
 #
-# 3) If a player was cut or was a transfer in the export then they may not belong to any team, resulting in this 
-# error. This is simply due to slightly different player info and in a slightly different order. It can be 
-# avoided by using an export in which all drafted players are already on a team, or manually fixing the data in 
+# 3) If a player was cut or was a transfer in the export then they may not belong to any team, resulting in this
+# error. This is simply due to slightly different player info and in a slightly different order. It can be
+# avoided by using an export in which all drafted players are already on a team, or manually fixing the data in
 # the text file prior to running the program.
 #
 # 	a) This error can also occur when transfer players have stats for two different teams. Just delete the
@@ -132,14 +133,14 @@ stat_caps = {
 
 	"RB": {
 		"hgt": 0.80,
-		"stre": 0.75,
-		"spd": 0.55,
-		"jmp": 0.70,
+		"stre": 0.77,
+		"spd": 0.80,
+		"jmp": 0.80,
 		"hnd": 0.60,
 		"dnk": 0.75,
-		"ft": 0.65,
+		"ft": 0.77,
 		"stl": 0.70,
-		"drb": 0.65
+		"drb": 0.80
 	},
 
 	#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -149,12 +150,12 @@ stat_caps = {
 	#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 	"WR": {
-		"hgt": 0.80,
+		"hgt": 0.85,
 		"stre": 0.70,
 		"jmp": 0.70,
 		"dnk": 0.75,
 		"ft": 0.55,
-		"stl": 0.60,
+		"stl": 0.75,
 		"drb": 0.63
 	},
 
@@ -275,7 +276,7 @@ stat_caps = {
 #
 #---------------------------------------------------------------------------------------------------------------
 #
-# Potential is partially randomized and partially calculated based on age, overall, and estimated draft 
+# Potential is partially randomized and partially calculated based on age, overall, and estimated draft
 # position. Either one of these three can be given a greater or lower weight in order to customize the amount
 # of randomness potential can have.
 #
@@ -316,21 +317,38 @@ def calc_potential (est_ovr, coll_ovr, potential, age, position, page, povr, pdr
 	npot = 100
 	npot -= (age - 20) * page
 
-	if (position == "RB") or (position == "WR") or (position == "CB"):
-		npot -= (est_ovr - 30) * povr * 3 / 2
-		if ((coll_ovr + potential) > 190) and (coll_ovr > 90):
+	# Changes the default potential by overall value and the potential by draft position value based on position
+	if (position == "RB"):
+		npot -= (est_ovr - 30) * povr * 2
+		if ((coll_ovr + potential) > 185) and (coll_ovr > 90):
 			dpos = 0
-		elif ((coll_ovr + potential) > 190) or (coll_ovr > 90):
+		elif ((coll_ovr + potential) > 185) and (coll_ovr > 87):
 			dpos = 10
-		elif coll_ovr > 88:
+		elif ((coll_ovr + potential) > 185) or (coll_ovr > 87):
 			dpos = 30
-		elif ((coll_ovr + potential) > 175) and (coll_ovr > 85):
+		elif coll_ovr > 85:
 			dpos = 60
-		elif coll_ovr > 83:
+		elif coll_ovr > 82:
 			dpos = 120
 		else:
 			dpos = 200
-		npot -= dpos * pdraft * 1 / 2
+		npot -= dpos * pdraft * 1 / 4
+
+	elif (position == "OL") or (position == "WR") or (position == "CB"):
+		npot -= ((est_ovr - 30) * povr * 1 / 2) + 10
+		if ((coll_ovr + potential) > 190) and (coll_ovr > 89):
+			dpos = 0
+		elif ((coll_ovr + potential) > 190) or (coll_ovr > 88):
+			dpos = 10
+		elif coll_ovr > 86:
+			dpos = 30
+		elif ((coll_ovr + potential) > 175) or (coll_ovr > 83):
+			dpos = 60
+		elif coll_ovr > 80:
+			dpos = 120
+		else:
+			dpos = 200
+		npot -= dpos * pdraft * 4 / 3
 
 	elif position == "QB":
 		npot -= (est_ovr - 30) * povr * 3 / 4
@@ -362,7 +380,7 @@ def calc_potential (est_ovr, coll_ovr, potential, age, position, page, povr, pdr
 			dpos = 120
 		else:
 			dpos = 200
-		npot -= dpos * pdraft
+		npot -= dpos * pdraft * 5 / 3
 
 	npot += random.randint((prandom * -1), prandom)
 	npot = "{:.0f}".format(npot)
@@ -481,11 +499,11 @@ for i in range(len(file)):
 	if pos == "K":
 		new_ratings += " " + file[i][-23][-7:-1] + "\n"
 	else:
-		new_ratings +=file[i][-22][-7:] + "\n"
+		new_ratings += file[i][-22][-7:] + "\n"
 
 	# Joins all of the player info together into a string for the json
-	player_info = file[i][-1] + "\n" + "      \"tid\": -2," + "\n" + file[i][-6] + "\n" + file[i][-3] + "\n" + file[i][-5] + "\n" + file[i][-4] + "\n" + file[i][-19] + "\n" + file[i][-18] + "\n" + "        \"loc\": \"" + my_school + "\"" + "\n" + file[i][-16] + "\n" + "      \"ratings\": [" + "\n" + "        {" + "\n" + "          "
-	
+	player_info = file[i][-1] + "\n" + "      \"tid\": -2," + "\n" + file[i][-6] + "\n" + file[i][-3] + "\n" + file[i][-5] + "\n" + file[i][-4] + "\n" + file[i][-19] + "\n" + file[i][-18] + "\n" + "        \"loc\": \"" + my_school + "\"" + "\n" + file[i][-16] + "\n" + "      \"ratings\": [" + "\n" + "        {" + "\n"
+
 	# Writes all player data into the json
 	output.write("    {" + "\n" + player_info + new_ratings)
 	if file[i] != file[-1]:

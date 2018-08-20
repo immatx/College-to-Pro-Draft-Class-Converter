@@ -1,1 +1,1 @@
-"# College-to-Pro-Draft-Class-Converter" 
+This program will allow you to take player profiles from a college football zengm export and convert them to an appropriate rating for entering the pro scene. Additionally the program will place the players into a .json that can be used as a custom draft class.
