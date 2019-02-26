@@ -1,7 +1,7 @@
 #===============================================================================================================
 #
 # -- PROgram - A ZenGM Football Draft Class Creator by immatx --
-# -- Last Updated: 2018.08.19 --
+# -- Last Updated: 2019.02.26 --
 # -- Initial Release -- 2018.07.26 --
 #
 #===============================================================================================================
@@ -14,6 +14,8 @@
 # 2018.07.28 - Bug Fixed: Players will no longer not show up on the roster screen after being drafted. Also
 #              added a catch for potential negative ratings.
 # 2018.08.19 - Code Update: Improved potential and ratings realism for some positions.
+# 2019.02.26 - Bug Fixed: Added catches so that tranfer players, some kickers, and some players no longer
+#              caused errors.
 #
 #===============================================================================================================
 #
@@ -22,9 +24,11 @@
 #---------------------------------------------------------------------------------------------------------------
 #
 # This program allows you to export draft classes from ZenGM College Football into ZenGM Pro Football without
-# going through the hassel of manually importing them all. Since this isn't built directly into the ZenGM
+# going through the hassle of manually importing them all. Since this isn't built directly into the ZenGM
 # code there is still some work that must be done by the user, but this program is designed specifically
-# to decrease that process from several hours down to about 30 minutes of work.
+# to decrease that process from several hours down to about 30 minutes of work. It also gives you the option of
+# customizing the ratings rookies have upon entry by adjusting the positional stat caps or the weight of the
+# potential values.
 #
 #===============================================================================================================
 #
@@ -64,29 +68,12 @@
 #
 #---------------------------------------------------------------------------------------------------------------
 #
-# 1) If the ending of the skills section inside of ratings doesn't have the ending ] on a seperate line it can
-# result in a mis-write of the json file. Simply moving the ] onto the next line and re-running the program
-# will fix the issue. Also manually fixing it in the json is rather simple so that's another option.
-#
-# 		ERROR MESSAGE: None
-#
-# 2) If you accidentally deleted a comma while pasting players into the text file then the draft class won't
+# 1) If you accidentally deleted a comma while pasting players into the text file then the draft class won't
 # upload. Usually the deleted comma is after a player's name, so you can just control f "name" in the new
 # json or the text file to see where the missing comma goes. If it's not after a name then you'll just have
 # to manually go through each line. :(
 #
 # 		ERROR MESSAGE: None
-#
-# 3) If a player was cut or was a transfer in the export then they may not belong to any team, resulting in this
-# error. This is simply due to slightly different player info and in a slightly different order. It can be
-# avoided by using an export in which all drafted players are already on a team, or manually fixing the data in
-# the text file prior to running the program.
-#
-# 	a) This error can also occur when transfer players have stats for two different teams. Just delete the
-# 	secondary tid under tid stats and the error will go away.
-#
-# 		ERROR MESSAGE: tid = int(file[i][-11][-3:-1])
-# 				ValueError: invalid literal for int() with base 10: ' ]'
 #
 #===============================================================================================================
 #
@@ -470,12 +457,17 @@ output.write("{" + "\n" + "  \"version\": 27," + "\n" + "  \"players\": [" + "\n
 
 # Main code loop
 for i in range(len(file)):
+	# Checks for potential errors
+	if file[i][-10][-1] == ",":
+		transfer = 1
+	else:
+		transfer = 0
 
 	# Sets important information as variables to be used later
 	values = file[i][0:18]
 	ovr = int(file[i][19][-3:-1])
 	pot = int(file[i][20][-3:-1])
-	tid = int(file[i][-11][-3:-1])
+	tid = int(file[i][-(11+transfer)][-3:-1])
 	pos = str(file[i][-6][-4:-2])
 	my_school = "USA"
 	if use_colleges == True:
@@ -491,18 +483,14 @@ for i in range(len(file)):
 	new_ovr = pr[1]
 
 	# Calculates potential
-	player_age = int(file[i][18][-5:-1]) - int(file[i][-18][-5:-1])
+	player_age = int(file[i][18][-5:-1]) - int(file[i][-(18+transfer)][-5:-1])
 	new_pot = calc_potential(new_ovr, ovr, pot, player_age, pos, p_age, p_ovr, p_draft, p_random)
 
 	# Joins all of the ratings data together into a string for the json
-	new_ratings = "\n".join(pro_rat) + "\n" + "          \"ovr\": {:.0f}".format(new_ovr) + "," + "\n" + "          \"pot\": " + str(new_pot) + "\n" + file[i][-21] + "\n"
-	if pos == "K":
-		new_ratings += " " + file[i][-23][-7:-1] + "\n"
-	else:
-		new_ratings += file[i][-22][-7:] + "\n"
+	new_ratings = "\n".join(pro_rat) + "\n" + "          \"ovr\": {:.0f}".format(new_ovr) + "," + "\n" + "          \"pot\": " + str(new_pot) + "\n" + file[i][-(21+transfer)] + "\n      ]\n"
 
 	# Joins all of the player info together into a string for the json
-	player_info = file[i][-1] + "\n" + "      \"tid\": -2," + "\n" + file[i][-6] + "\n" + file[i][-3] + "\n" + file[i][-5] + "\n" + file[i][-4] + "\n" + file[i][-19] + "\n" + file[i][-18] + "\n" + "        \"loc\": \"" + my_school + "\"" + "\n" + file[i][-16] + "\n" + "      \"ratings\": [" + "\n" + "        {" + "\n"
+	player_info = file[i][-1] + "\n" + "      \"tid\": -2," + "\n" + file[i][-6] + "\n" + file[i][-3] + "\n" + file[i][-5] + "\n" + file[i][-4] + "\n" + file[i][-(19+transfer)] + "\n" + file[i][-(18+transfer)] + "\n" + "        \"loc\": \"" + my_school + "\"" + "\n" + file[i][-(16+transfer)] + "\n" + "      \"ratings\": [" + "\n" + "        {" + "\n"
 
 	# Writes all player data into the json
 	output.write("    {" + "\n" + player_info + new_ratings)
